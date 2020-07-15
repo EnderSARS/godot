@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  GodotGestureHandler.java                                             */
+/*  InputUtils.java                                                      */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,80 +28,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-package org.godotengine.godot.input;
-
-import org.godotengine.godot.GodotLib;
-import org.godotengine.godot.GodotRenderView;
-import org.godotengine.godot.utils.InputUtils;
-
-import android.view.GestureDetector;
+package org.godotengine.godot.utils;
 import android.view.MotionEvent;
 
-/**
- * Handles gesture input related events for the {@link GodotRenderView} view.
- * https://developer.android.com/reference/android/view/GestureDetector.SimpleOnGestureListener
- */
-public class GodotGestureHandler extends GestureDetector.SimpleOnGestureListener {
-	private final GodotRenderView mRenderView;
-
-	public GodotGestureHandler(GodotRenderView godotView) {
-		mRenderView = godotView;
-	}
-
-	private void queueEvent(Runnable task) {
-		mRenderView.queueOnRenderThread(task);
-	}
-
-	@Override
-	public boolean onDown(MotionEvent event) {
-		super.onDown(event);
-		//Log.i("GodotGesture", "onDown");
-		return true;
-	}
-
-	@Override
-	public boolean onSingleTapConfirmed(MotionEvent event) {
-		super.onSingleTapConfirmed(event);
-		return true;
-	}
-
-	@Override
-	public void onLongPress(MotionEvent event) {
-		//Log.i("GodotGesture", "onLongPress");
-	}
-
-	@Override
-	public boolean onDoubleTap(MotionEvent event) {
-		//Log.i("GodotGesture", "onDoubleTap");
-		final int x = Math.round(event.getX());
-		final int y = Math.round(event.getY());
-		final int buttonMask = InputUtils.fixButtonsStateMask(event.getButtonState());
-		queueEvent(new Runnable() {
-			@Override
-			public void run() {
-				GodotLib.doubleTap(buttonMask, x, y);
-			}
-		});
-		return true;
-	}
-
-	@Override
-	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-		//Log.i("GodotGesture", "onScroll");
-		final int x = Math.round(distanceX);
-		final int y = Math.round(distanceY);
-		queueEvent(new Runnable() {
-			@Override
-			public void run() {
-				GodotLib.scroll(x, y);
-			}
-		});
-		return true;
-	}
-
-	@Override
-	public boolean onFling(MotionEvent event1, MotionEvent event2, float velocityX, float velocityY) {
-		//Log.i("GodotGesture", "onFling");
-		return true;
+public class InputUtils {
+	/*
+	 * Makes BUTTON_BACK and BUTTON_FORWARD mask to be equal to godot's BUTTON_MASK_XBUTTON
+	 */
+	public static int fixButtonsStateMask(int buttonMask) {
+		return (buttonMask & ~(MotionEvent.BUTTON_BACK | MotionEvent.BUTTON_FORWARD)) | (((MotionEvent.BUTTON_BACK | MotionEvent.BUTTON_FORWARD) & buttonMask) << 4);
 	}
 }

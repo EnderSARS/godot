@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  GodotGestureHandler.java                                             */
+/*  java_godot_view_wrapper.cpp                                          */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,80 +28,33 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-package org.godotengine.godot.input;
+#include "java_godot_view_wrapper.h"
 
-import org.godotengine.godot.GodotLib;
-import org.godotengine.godot.GodotRenderView;
-import org.godotengine.godot.utils.InputUtils;
+#include "thread_jandroid.h"
 
-import android.view.GestureDetector;
-import android.view.MotionEvent;
+GodotJavaViewWrapper::GodotJavaViewWrapper(jobject godot_view) {
+	JNIEnv *env = ThreadAndroid::get_env();
 
-/**
- * Handles gesture input related events for the {@link GodotRenderView} view.
- * https://developer.android.com/reference/android/view/GestureDetector.SimpleOnGestureListener
- */
-public class GodotGestureHandler extends GestureDetector.SimpleOnGestureListener {
-	private final GodotRenderView mRenderView;
+	_godot_view = env->NewGlobalRef(godot_view);
 
-	public GodotGestureHandler(GodotRenderView godotView) {
-		mRenderView = godotView;
-	}
+	cls = (jclass)env->NewGlobalRef(env->GetObjectClass(godot_view));
 
-	private void queueEvent(Runnable task) {
-		mRenderView.queueOnRenderThread(task);
-	}
+	_request_pointer_capture = env->GetMethodID(cls, "requestPointerCapture", "()V");
+	_release_pointer_capture = env->GetMethodID(cls, "releasePointerCapture", "()V");
+	_set_pointer_icon = env->GetMethodID(cls, "setPointerIcon", "(I)V");
+}
 
-	@Override
-	public boolean onDown(MotionEvent event) {
-		super.onDown(event);
-		//Log.i("GodotGesture", "onDown");
-		return true;
-	}
+void GodotJavaViewWrapper::request_pointer_capture() {
+	JNIEnv *env = ThreadAndroid::get_env();
+	env->CallVoidMethod(_godot_view, _request_pointer_capture);
+}
 
-	@Override
-	public boolean onSingleTapConfirmed(MotionEvent event) {
-		super.onSingleTapConfirmed(event);
-		return true;
-	}
+void GodotJavaViewWrapper::release_pointer_capture() {
+	JNIEnv *env = ThreadAndroid::get_env();
+	env->CallVoidMethod(_godot_view, _release_pointer_capture);
+}
 
-	@Override
-	public void onLongPress(MotionEvent event) {
-		//Log.i("GodotGesture", "onLongPress");
-	}
-
-	@Override
-	public boolean onDoubleTap(MotionEvent event) {
-		//Log.i("GodotGesture", "onDoubleTap");
-		final int x = Math.round(event.getX());
-		final int y = Math.round(event.getY());
-		final int buttonMask = InputUtils.fixButtonsStateMask(event.getButtonState());
-		queueEvent(new Runnable() {
-			@Override
-			public void run() {
-				GodotLib.doubleTap(buttonMask, x, y);
-			}
-		});
-		return true;
-	}
-
-	@Override
-	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-		//Log.i("GodotGesture", "onScroll");
-		final int x = Math.round(distanceX);
-		final int y = Math.round(distanceY);
-		queueEvent(new Runnable() {
-			@Override
-			public void run() {
-				GodotLib.scroll(x, y);
-			}
-		});
-		return true;
-	}
-
-	@Override
-	public boolean onFling(MotionEvent event1, MotionEvent event2, float velocityX, float velocityY) {
-		//Log.i("GodotGesture", "onFling");
-		return true;
-	}
+void GodotJavaViewWrapper::set_pointer_icon(int pointer_type) {
+	JNIEnv *env = ThreadAndroid::get_env();
+	env->CallVoidMethod(_godot_view, _set_pointer_icon, pointer_type);
 }

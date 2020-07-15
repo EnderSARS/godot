@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  GodotGestureHandler.java                                             */
+/*  java_godot_view_wrapper.h                                            */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,80 +28,29 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-package org.godotengine.godot.input;
+#ifndef GODOT_JAVA_GODOT_VIEW_WRAPPER_H
+#define GODOT_JAVA_GODOT_VIEW_WRAPPER_H
 
-import org.godotengine.godot.GodotLib;
-import org.godotengine.godot.GodotRenderView;
-import org.godotengine.godot.utils.InputUtils;
+#include <android/log.h>
+#include <jni.h>
 
-import android.view.GestureDetector;
-import android.view.MotionEvent;
+// Class that makes functions in java/src/org/godotengine/godot/GodotView.java callable from C++
+class GodotJavaViewWrapper {
+private:
+	jclass cls;
 
-/**
- * Handles gesture input related events for the {@link GodotRenderView} view.
- * https://developer.android.com/reference/android/view/GestureDetector.SimpleOnGestureListener
- */
-public class GodotGestureHandler extends GestureDetector.SimpleOnGestureListener {
-	private final GodotRenderView mRenderView;
+	jobject _godot_view;
 
-	public GodotGestureHandler(GodotRenderView godotView) {
-		mRenderView = godotView;
-	}
+	jmethodID _request_pointer_capture = 0;
+	jmethodID _release_pointer_capture = 0;
+	jmethodID _set_pointer_icon = 0;
 
-	private void queueEvent(Runnable task) {
-		mRenderView.queueOnRenderThread(task);
-	}
+public:
+	GodotJavaViewWrapper(jobject pJobject);
 
-	@Override
-	public boolean onDown(MotionEvent event) {
-		super.onDown(event);
-		//Log.i("GodotGesture", "onDown");
-		return true;
-	}
+	void request_pointer_capture();
+	void release_pointer_capture();
+	void set_pointer_icon(int pointer_type);
+};
 
-	@Override
-	public boolean onSingleTapConfirmed(MotionEvent event) {
-		super.onSingleTapConfirmed(event);
-		return true;
-	}
-
-	@Override
-	public void onLongPress(MotionEvent event) {
-		//Log.i("GodotGesture", "onLongPress");
-	}
-
-	@Override
-	public boolean onDoubleTap(MotionEvent event) {
-		//Log.i("GodotGesture", "onDoubleTap");
-		final int x = Math.round(event.getX());
-		final int y = Math.round(event.getY());
-		final int buttonMask = InputUtils.fixButtonsStateMask(event.getButtonState());
-		queueEvent(new Runnable() {
-			@Override
-			public void run() {
-				GodotLib.doubleTap(buttonMask, x, y);
-			}
-		});
-		return true;
-	}
-
-	@Override
-	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-		//Log.i("GodotGesture", "onScroll");
-		final int x = Math.round(distanceX);
-		final int y = Math.round(distanceY);
-		queueEvent(new Runnable() {
-			@Override
-			public void run() {
-				GodotLib.scroll(x, y);
-			}
-		});
-		return true;
-	}
-
-	@Override
-	public boolean onFling(MotionEvent event1, MotionEvent event2, float velocityX, float velocityY) {
-		//Log.i("GodotGesture", "onFling");
-		return true;
-	}
-}
+#endif //GODOT_JAVA_GODOT_VIEW_WRAPPER_H

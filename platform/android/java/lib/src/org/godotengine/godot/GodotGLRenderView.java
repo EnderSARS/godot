@@ -45,10 +45,15 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.view.GestureDetector;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.PointerIcon;
 import android.view.SurfaceView;
+
+import androidx.annotation.Keep;
 
 /**
  * A simple GLSurfaceView sub-class that demonstrate how to perform
@@ -73,6 +78,7 @@ public class GodotGLRenderView extends GLSurfaceView implements GodotRenderView 
 	private final GodotInputHandler inputHandler;
 	private final GestureDetector detector;
 	private final GodotRenderer godotRenderer;
+	private PointerIcon pointerIcon;
 
 	public GodotGLRenderView(Context context, Godot godot, XRMode xrMode, boolean p_use_32_bits,
 			boolean p_use_debug_opengl) {
@@ -84,6 +90,9 @@ public class GodotGLRenderView extends GLSurfaceView implements GodotRenderView 
 		this.inputHandler = new GodotInputHandler(this);
 		this.detector = new GestureDetector(context, new GodotGestureHandler(this));
 		this.godotRenderer = new GodotRenderer();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+			pointerIcon = PointerIcon.getSystemIcon(getContext(), PointerIcon.TYPE_DEFAULT);
+		}
 		init(xrMode, false, 16, 0);
 	}
 
@@ -127,7 +136,11 @@ public class GodotGLRenderView extends GLSurfaceView implements GodotRenderView 
 	public boolean onTouchEvent(MotionEvent event) {
 		super.onTouchEvent(event);
 		this.detector.onTouchEvent(event);
-		return godot.gotTouchEvent(event);
+		if (!event.isFromSource(InputDevice.SOURCE_MOUSE)) {
+			return godot.gotTouchEvent(event);
+		} else {
+			return inputHandler.handleMouseDragEvent(event);
+		}
 	}
 
 	@Override
@@ -143,6 +156,26 @@ public class GodotGLRenderView extends GLSurfaceView implements GodotRenderView 
 	@Override
 	public boolean onGenericMotionEvent(MotionEvent event) {
 		return inputHandler.onGenericMotionEvent(event) || super.onGenericMotionEvent(event);
+	}
+
+	@Override
+	public boolean onCapturedPointerEvent(MotionEvent event) {
+		return inputHandler.onCapturedPointerEvent(event);
+	}
+
+	/**
+	 * called from JNI to change pointer icon
+	 */
+	@Keep
+	public void setPointerIcon(int pointerType) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+			pointerIcon = PointerIcon.getSystemIcon(getContext(), pointerType);
+		}
+	}
+
+	@Override
+	public PointerIcon onResolvePointerIcon(MotionEvent me, int pointerIndex) {
+		return pointerIcon;
 	}
 
 	private void init(XRMode xrMode, boolean translucent, int depth, int stencil) {

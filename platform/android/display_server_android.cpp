@@ -395,6 +395,8 @@ DisplayServerAndroid::DisplayServerAndroid(const String &p_rendering_driver, Dis
 
 	keep_screen_on = GLOBAL_GET("display/window/energy_saving/keep_screen_on");
 
+	buttons_state = 0;
+
 #if defined(OPENGL_ENABLED)
 	if (rendering_driver == "opengl") {
 		bool gl_initialization_error = false;
@@ -652,22 +654,102 @@ void DisplayServerAndroid::process_hover(int p_type, Point2 p_pos) {
 			_set_key_modifier_state(ev);
 			ev->set_position(p_pos);
 			ev->set_global_position(p_pos);
-			ev->set_relative(p_pos - hover_prev_pos);
+			ev->set_relative(p_pos - prev_pointer_pos);
 			Input::get_singleton()->parse_input_event(ev);
-			hover_prev_pos = p_pos;
+			prev_pointer_pos = p_pos;
 		} break;
 	}
 }
 
-void DisplayServerAndroid::process_double_tap(Point2 p_pos) {
+void DisplayServerAndroid::process_mouse_event(int p_action, int p_button_mask, Point2 p_pos, bool p_is_capture) {
+	switch (p_action) {
+		case ACTION_BUTTON_PRESS:
+		case ACTION_BUTTON_RELEASE: {
+			Ref<InputEventMouseButton> ev;
+			ev.instance();
+			_set_key_modifier_state(ev);
+			if (!p_is_capture) {
+				ev->set_position(p_pos);
+				ev->set_global_position(p_pos);
+			} else {
+				ev->set_position(prev_pointer_pos);
+				ev->set_global_position(prev_pointer_pos);
+			}
+			ev->set_pressed(p_action == ACTION_BUTTON_PRESS);
+			int button_mask;
+			if (p_button_mask < 8) {
+				button_mask = buttons_state ^ p_button_mask;
+			} else {
+				button_mask = p_button_mask;
+			}
+
+			if (ev->is_pressed()) {
+				buttons_state |= button_mask;
+			} else {
+				buttons_state &= ~button_mask;
+			}
+
+			ev->set_button_index(button_index_from_mask(button_mask));
+			ev->set_button_mask(buttons_state);
+			Input::get_singleton()->parse_input_event(ev);
+		} break;
+
+		case ACTION_MOVE: {
+			Ref<InputEventMouseMotion> ev;
+
+			ev.instance();
+			_set_key_modifier_state(ev);
+			if (!p_is_capture) {
+				ev->set_position(p_pos);
+				ev->set_global_position(p_pos);
+				ev->set_relative(p_pos - prev_pointer_pos);
+				prev_pointer_pos = p_pos;
+			} else {
+				ev->set_position(prev_pointer_pos);
+				ev->set_global_position(prev_pointer_pos);
+				ev->set_relative(p_pos);
+			}
+			ev->set_button_mask(p_button_mask);
+			Input::get_singleton()->parse_input_event(ev);
+		} break;
+	}
+}
+
+void DisplayServerAndroid::process_double_tap(int p_button_mask, Point2 p_pos) {
 	Ref<InputEventMouseButton> ev;
 	ev.instance();
 	_set_key_modifier_state(ev);
 	ev->set_position(p_pos);
 	ev->set_global_position(p_pos);
-	ev->set_pressed(false);
+	ev->set_pressed(p_button_mask != 0);
+	ev->set_button_index(button_index_from_mask(p_button_mask));
 	ev->set_doubleclick(true);
 	Input::get_singleton()->parse_input_event(ev);
+}
+
+int DisplayServerAndroid::button_index_from_mask(int button_mask) const {
+	switch (button_mask) {
+		case BUTTON_MASK_LEFT:
+			return BUTTON_LEFT;
+		case BUTTON_MASK_RIGHT:
+			return BUTTON_RIGHT;
+		case BUTTON_MASK_MIDDLE:
+			return BUTTON_MIDDLE;
+		case ANDROID_MOUSE_WHEEL_UP:
+			return BUTTON_WHEEL_UP;
+		case ANDROID_MOUSE_WHEEL_DOWN:
+			return BUTTON_WHEEL_DOWN;
+		case ANDROID_MOUSE_WHEEL_RIGHT:
+			return BUTTON_WHEEL_RIGHT;
+		case ANDROID_MOUSE_WHEEL_LEFT:
+			return BUTTON_WHEEL_LEFT;
+		case BUTTON_MASK_XBUTTON1:
+			return BUTTON_XBUTTON1;
+		case BUTTON_MASK_XBUTTON2:
+			return BUTTON_XBUTTON2;
+		default:
+			return 0;
+	}
 }
 
 void DisplayServerAndroid::process_scroll(Point2 p_pos) {
@@ -694,4 +776,67 @@ void DisplayServerAndroid::process_magnetometer(const Vector3 &p_magnetometer) {
 
 void DisplayServerAndroid::process_gyroscope(const Vector3 &p_gyroscope) {
 	Input::get_singleton()->set_gyroscope(p_gyroscope);
+}
+
+void DisplayServerAndroid::set_mouse_mode(MouseMode p_mode) {
+	if (mouse_mode == p_mode)
+		return;
+
+	if (p_mode == MouseMode::MOUSE_MODE_HIDDEN) {
+		OS_Android::get_singleton()->get_godot_java()->get_godot_view()->set_pointer_icon(0);
+	} else {
+		cursor_set_shape(cursor_shape);
+	}
+
+	if (p_mode == MouseMode::MOUSE_MODE_CAPTURED) {
+		OS_Android::get_singleton()->get_godot_java()->get_godot_view()->request_pointer_capture();
+	} else {
+		OS_Android::get_singleton()->get_godot_java()->get_godot_view()->release_pointer_capture();
+	}
+
+	mouse_mode = p_mode;
+}
+
+Point2i DisplayServerAndroid::mouse_get_position() const {
+	return prev_pointer_pos;
+}
+
+int DisplayServerAndroid::mouse_get_button_state() const {
+	return buttons_state;
+}
+
+void DisplayServerAndroid::cursor_set_shape(CursorShape p_shape) {
+	// https://developer.android.com/reference/android/view/PointerIcon
+	static const int android_cursors[CURSOR_MAX] = {
+		1000,
+		1008,
+		1002,
+		1007,
+		1004, // WAIT
+		1004, // BUSY
+		1021,
+		1021,
+		1000, // no forbidden
+		1015,
+		1014,
+		1017,
+		1016,
+		1020,
+		1015,
+		1014,
+		1003,
+	};
+	if (cursor_shape == p_shape) {
+		return;
+	}
+
+	cursor_shape = p_shape;
+
+	if (mouse_mode == MouseMode::MOUSE_MODE_VISIBLE || mouse_mode == MouseMode::MOUSE_MODE_CONFINED) {
+		OS_Android::get_singleton()->get_godot_java()->get_godot_view()->set_pointer_icon(android_cursors[cursor_shape]);
+	}
+}
+
+DisplayServer::CursorShape DisplayServerAndroid::cursor_get_shape() const {
+	return cursor_shape;
 }

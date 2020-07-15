@@ -266,11 +266,18 @@ JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_hover(JNIEnv *env, jc
 	DisplayServerAndroid::get_singleton()->process_hover(p_type, Point2(p_x, p_y));
 }
 
-JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_doubletap(JNIEnv *env, jclass clazz, jint p_x, jint p_y) {
+JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_mouseEvent(JNIEnv *env, jclass clazz, jint p_action, jint p_button_mask, jfloat p_x, jfloat p_y, jboolean p_is_captured) {
 	if (step == 0)
 		return;
 
-	DisplayServerAndroid::get_singleton()->process_double_tap(Point2(p_x, p_y));
+	DisplayServerAndroid::get_singleton()->process_mouse_event(p_action, p_button_mask, Point2(p_x, p_y), p_is_captured);
+}
+
+JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_doubleTap(JNIEnv *env, jclass clazz, jint p_button_mask, jint p_x, jint p_y) {
+	if (step == 0)
+		return;
+
+	DisplayServerAndroid::get_singleton()->process_double_tap(p_button_mask, Point2(p_x, p_y));
 }
 
 JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_scroll(JNIEnv *env, jclass clazz, jint p_x, jint p_y) {

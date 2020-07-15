@@ -70,6 +70,7 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings.Secure;
 import android.view.Display;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;

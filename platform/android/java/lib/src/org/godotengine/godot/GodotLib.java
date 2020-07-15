@@ -102,9 +102,14 @@ public class GodotLib {
 	public static native void hover(int type, int x, int y);
 
 	/**
+	 * Forward mouse pressed events from the main thread to the GL thread.
+	 */
+	public static native void mouseEvent(int actionMask, int buttonMask, float x, float y, boolean isCaptured);
+
+	/**
 	 * Forward double_tap events from the main thread to the GL thread.
 	 */
-	public static native void doubletap(int x, int y);
+	public static native void doubleTap(int buttonMask, int x, int y);
 
 	/**
 	 * Forward scroll events from the main thread to the GL thread.

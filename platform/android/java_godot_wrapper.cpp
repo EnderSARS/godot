@@ -110,6 +110,16 @@ jobject GodotJavaWrapper::get_class_loader() {
 	}
 }
 
+GodotJavaViewWrapper *GodotJavaWrapper::get_godot_view() {
+	if (_godot_view != NULL) {
+		return _godot_view;
+	}
+	JNIEnv *env = ThreadAndroid::get_env();
+	jfieldID godot_view_field_id = env->GetFieldID(godot_class, "mRenderView", "Lorg/godotengine/godot/GodotRenderView;");
+	_godot_view = new GodotJavaViewWrapper(env->GetObjectField(godot_instance, godot_view_field_id));
+	return _godot_view;
+}
+
 void GodotJavaWrapper::on_video_init(JNIEnv *p_env) {
 	if (_on_video_init)
 		if (p_env == nullptr)
