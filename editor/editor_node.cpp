@@ -517,6 +517,7 @@ void EditorNode::_notification(int p_what) {
 			get_tree()->get_root()->set_as_audio_listener(false);
 			get_tree()->get_root()->set_as_audio_listener_2d(false);
 			get_tree()->set_auto_accept_quit(false);
+			get_tree()->set_quit_on_go_back(false);
 			get_tree()->get_root()->connect("files_dropped", callable_mp(this, &EditorNode::_dropped_files));
 
 			/* DO NOT LOAD SCENES HERE, WAIT FOR FILE SCANNING AND REIMPORT TO COMPLETE */

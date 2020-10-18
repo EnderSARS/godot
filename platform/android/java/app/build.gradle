@@ -47,6 +47,7 @@ dependencies {
         // Custom build mode. In this scenario this project is the only one around and the Godot
         // library is available through the pre-generated godot-lib.*.aar android archive files.
         debugImplementation fileTree(dir: 'libs/debug', include: ['*.jar', '*.aar'])
+        releaseDebugmIplementation fileTree(dir: 'libs/debug', include: ['*.jar', '*.aar'])
         releaseImplementation fileTree(dir: 'libs/release', include: ['*.jar', '*.aar'])
     }
 
@@ -93,6 +94,10 @@ android {
         targetSdkVersion versions.targetSdk
     }
 
+    buildTypes {
+        release_debug {}
+    }
+
     lintOptions {
         abortOnError false
         disable 'MissingTranslation', 'UnusedResources'
@@ -121,6 +126,7 @@ android {
             assets.srcDirs = ['assets']
         }
         debug.jniLibs.srcDirs = ['libs/debug']
+        release_debug.jniLibs.srcDirs = ['libs/debug']
         release.jniLibs.srcDirs = ['libs/release']
     }
 

@@ -16,3 +16,5 @@ target_include_directories(${PROJECT_NAME}
         SYSTEM PUBLIC
         ${GODOT_ROOT_DIR}
         ${GODOT_ROOT_DIR}/modules/gdnative/include)
+
+add_definitions(-DUNIX_ENABLED -DVULKAN_ENABLED -DTOOLS_ENABLED)
