@@ -72,10 +72,10 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           scons target=release tools=no
-          ls -l bin/
+          ls -l
 
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ github.job }}
-          path: bin/*
+          path: /*
           retention-days: 14
